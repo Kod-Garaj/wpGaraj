@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-container grid-list-md>
+                    <v-layout row wrap>
+                        <v-flex xs12>
+                            <v-text-field label="URL" v-model="url"></v-text-field>
+                        </v-flex>
+                        <v-flex xs12>
+                            <v-btn color="primary" @click="calistir()">RUN BOY RUN</v-btn>
+                        </v-flex>
+                        <v-flex xs12 v-if="message">
+                            <v-alert type="success">
+                                {{ message }}
+                            </v-alert>
+                        </v-flex>
+                    </v-layout>
+                </v-container>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    url: 'https://expressjs.com/en/starter/hello-world.html',
+                    message: '',
+                }
+            },
+            mounted() {
+            },
+            methods: {
+                calistir() {
+                    let url = new URL(this.url);
+                    axios.post('/calistir', {
+                        url: url.hostname
+                    }).then(response => {
+                        if (response.data.status) {
+                            this.message = response.data.message;
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
