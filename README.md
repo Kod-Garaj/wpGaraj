@@ -2,7 +2,7 @@
 
 ## Projeyi Ayağa Kaldırmak
 
-Sunucuya RabbitMQ Server kurulumu yapılacak. Bu repoyu klonladıktan sonra <pre>npm install</pre> yapılıp;
+Sunucuya RabbitMQ Server kurulumu yapılacak. Bu repoyu klonladıktan sonra `npm install` yapılıp;
 
 - `rabbitmq-server` diyerek rabbitmq sunucusunu başlatıyoruz.
 - `npm start` diyerek sunucuya bağlanıp projeyi çalıştırıyoruz.
