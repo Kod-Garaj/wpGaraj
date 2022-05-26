@@ -20,9 +20,22 @@
                         <v-flex xs12>
                             <v-btn color="primary" @click="calistir()">RUN BOY RUN</v-btn>
                         </v-flex>
-                        <v-flex xs12 v-if="message">
+                        <v-flex xs12 v-if="durumObjesi.message">
                             <v-alert type="success">
-                                {{ message }}
+                                <template v-slot:prepend>
+                                    <template v-if="durumObjesi.durum === 'ISLENIYOR'">
+                                        <v-progress-circular indeterminate key="isleniyor"></v-progress-circular>
+                                    </template>
+                                    <template v-else-if="durumObjesi.durum === 'SIRAYA_ALINDI'">
+                                        <v-icon key="siraya_alindi">mdi-tray-plus</v-icon>
+                                    </template>
+                                    <template v-else-if="durumObjesi.durum === 'TAMAMLANDI'">
+                                        <v-icon key="tamamlandi">mdi-check-circle</v-icon>
+                                    </template>
+                                </template>
+                                <span class="ml-2">
+                                    {{ durumObjesi.message }}
+                                </span>
                             </v-alert>
                         </v-flex>
                     </v-layout>
@@ -34,6 +47,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
     <script>
         new Vue({
             el: '#app',
@@ -41,24 +55,57 @@
             data() {
                 return {
                     url: 'https://expressjs.com/en/starter/hello-world.html',
-                    message: '',
+                    durumObjesi: {},
+                    io: null,
+                    kullanici: {
+                        id: '123456',
+                        ad: "Cihat",
+                    }
                 }
             },
             mounted() {
+                this.io = io({
+                    autoConnect: false,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 3000,
+                });
+
+                this.io.on("mobil:oda-bildirim", (data) => {
+                    this.durumObjesi = data;
+                    console.log("Bildirim", data);
+                });
+
+                this.io.on("mobil:odaya-girildi", (data) => {
+                    this.message = JSON.stringify(data);
+                    console.log("ODAYA GİRDİM:", data);
+                });
+
+                this.io.on("connect", () => {
+                    console.log(this.io.id);
+                    this.io.emit("mobil:odaya-gir", {
+                        kullanici: this.kullanici,
+                    });
+                });
+
+                this.io.connect();
             },
             methods: {
                 calistir() {
                     let url = new URL(this.url);
-                    axios.post('/calistir', {
-                        url: url.hostname
-                    }).then(response => {
-                        if (response.data.status) {
-                            this.message = response.data.message;
-                        }
-                    })
-                    .catch(error => {
-                        console.log(error);
+                    this.io.emit("mobil:uygulama-olustur", {
+                        url: url.hostname,
+                        kullanici: this.kullanici,
                     });
+                    // axios.post('/calistir', {
+                    //     url: url.hostname
+                    // }).then(response => {
+                    //     if (response.data.status) {
+                    //         this.message = response.data.message;
+                    //     }
+                    // })
+                    // .catch(error => {
+                    //     console.log(error);
+                    // });
                 }
             }
         })

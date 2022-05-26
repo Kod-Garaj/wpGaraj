@@ -1,19 +1,48 @@
 const amqp = require("amqplib");
 const fs = require("fs");
 const { execSync } = require("child_process");
+const { io } = require("socket.io-client");
 
-connectToRabbitMQ();
+const socket = io("http://localhost:3000", {
+  autoConnect: false,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 6000,
+  // timeout: 10 * (60 * 1000),
+});
 
-async function connectToRabbitMQ() {
+socket.connect();
+
+socket.on("connect", () => {
+  console.log("Soket bağlandı.");
+  consumerCalistir();
+  pingPongCalistir();
+});
+
+socket.on("disconnect", () => {
+  console.log("Soket bağlantısı kesildi.");
+});
+
+socket.on("connect_error", (error) => {
+  console.error("HATA: Soket bağlantısı kesildi.");
+  console.error(error);
+});
+
+async function consumerCalistir() {
   try {
+    console.log("RabbitMQ bağlantısı kuruluyor... Consumer çalışıyor.");
+
     const connection = await amqp.connect("amqp://localhost");
     const channel = await connection.createChannel();
     await channel.assertQueue("wpgaraj", { durable: true });
     channel.prefetch(1);
-    channel.consume("wpgaraj", (msg) => {
+
+    channel.consume("wpgaraj", async (msg) => {
       if (msg !== null) {
-        const { url } = JSON.parse(msg.content.toString());
-        console.log(`[O] ${url} işleme başladı.`);
+        const data = JSON.parse(msg.content.toString());
+        const { url } = data;
+
+        console.log(`RMQ: [O] ${url} işleme başladı.`);
+
         const isWin = process.platform === "win32";
 
         const repoUrl = "https://github.com/Kod-Garaj/react-native-ref.git";
@@ -34,28 +63,34 @@ async function connectToRabbitMQ() {
           } else {
             execSync(`rm -rf ${basePath}`);
           }
-          // return res.json({
-          //   status: false,
-          //   message: "Bu sitenin önceden çalıştırılması var.",
-          // });
+
+          // socket.emit("mobil:uygulama-silindi", { ...data });
         }
 
-        try {
-          for (let i = 0; i < komutlar.length; i++) {
-            console.log(i, komutlar[i]);
-            execSync(komutlar[i]);
-          }
+        socket.emit("mobil:uygulama-isleniyor", { ...data, durum: "ISLENIYOR" });
 
-          console.log(` [√] ${url} tamamlandı.`);
-          channel.ack(msg);
-
-        } catch (error) {
-          console.log(JSON.stringify(error));
-          console.log(`[x] ${url} işlenemedi`);
+        for (let i = 0; i < komutlar.length; i++) {
+          console.log(i, komutlar[i]);
+          execSync(komutlar[i]);
         }
+
+        channel.ack(msg);
+        socket.emit("mobil:uygulama-tamamlandi", { ...data, durum: "TAMAMLANDI" });
+
+        console.log(`RMQ: [√] ${url} tamamlandı.`);
       }
     });
   } catch (error) {
     console.error(error);
   }
+}
+
+function pingPongCalistir() {
+  socket.on("ping", () => {
+    socket.emit("pong");
+  });
+
+  setInterval(() => {
+    socket.emit("ping");
+  }, 5000);
 }
