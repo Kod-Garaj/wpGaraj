@@ -10,3 +10,6 @@
 - `sudo service redis-server start` komutunu çalıştırarak Redis sunucumuzu çalıştırıyoruz.
 - `npm start` komutunu çalıştırarak NodeJS sunucumuzu çalıştırıyoruz.
 - `npm run consumer` komutunu çalıştırarak dilediğimiz kadar consumer oluşturarak istekleri karşılayabilirsiniz.
+
+
+NOT: sunucuda herhangi bir yerden `redis-cli` komutunu çalıştırarak redis komutlarını çalıştırabilirsiniz.
